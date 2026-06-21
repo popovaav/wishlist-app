@@ -1,0 +1,33 @@
+GET http://localhost:8000/wishlist
+
+###
+
+POST http://localhost:8000/wishlist
+Content-Type: application/json
+
+{
+  "title": "MacBook Air",
+  "price": 1200,
+  "priority": "High",
+  "status": "Want",
+  "user_id": 1
+}
+
+###
+
+PUT http://localhost:8000/wishlist/2
+Content-Type: application/json
+
+{
+
+  "title": "MacBook Air",
+  "price": 1200,
+  "priority": "Medium",
+  "status": "Want",
+  "user_id": 1
+
+}
+
+###
+
+DELETE http://localhost:8000/wishlist/1
