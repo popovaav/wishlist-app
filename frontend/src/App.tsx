@@ -1,7 +1,7 @@
-import './App.css'
+import { WishlistPage } from './pages/WishlistPage'
 
 function App() {
-  return <h1>Wishlist App</h1>;
+  return <WishlistPage />;
 }
 
 export default App
