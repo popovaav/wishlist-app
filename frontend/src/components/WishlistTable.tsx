@@ -21,6 +21,7 @@ import { WishlistTableToolbar } from './WishlistTableToolbar';
 import { deleteWishlistItem, type WishlistItem } from '@/api/wishlist';
 import { useWishlistColumns } from '@/hooks/useWishlistColumns';
 import { EditWishlistDialog } from './EditWishlistDialog';
+import { DeleteWishlistDialog } from './DeleteWishlistDialog';
 
 interface WishlistTableProps {
   data: WishlistItem[];
@@ -29,21 +30,21 @@ interface WishlistTableProps {
 export function WishlistTable({ data }: WishlistTableProps) {
   const queryClient = useQueryClient();
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<WishlistItem | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const { mutate: deleteItem, isPending: isDeleting, variables: deletingId } = useMutation({
+  const { mutate: deleteItem, isPending: isDeleting } = useMutation({
     mutationFn: deleteWishlistItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+      setDeletingItem(null);
     },
   });
 
   const columns = useWishlistColumns({
     onEdit: setEditingItem,
-    onDelete: deleteItem,
-    isDeleting,
-    deletingId,
+    onDeleteRequest: setDeletingItem,
   });
 
   const table = useReactTable({
@@ -116,6 +117,13 @@ export function WishlistTable({ data }: WishlistTableProps) {
       <EditWishlistDialog
         item={editingItem}
         onOpenChange={(open) => { if (!open) setEditingItem(null); }}
+      />
+
+      <DeleteWishlistDialog
+        item={deletingItem}
+        isPending={isDeleting}
+        onConfirm={() => deletingItem && deleteItem(deletingItem.id)}
+        onOpenChange={(open) => { if (!open) setDeletingItem(null); }}
       />
     </>
   );
