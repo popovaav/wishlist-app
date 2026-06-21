@@ -1,10 +1,22 @@
 import type { Request, Response } from 'express';
 import pool from '../db/db.js';
 
-export async function getWishlistItems(_req: Request, res: Response): Promise<void> {
-    const result = await pool.query('SELECT * FROM wishlist_items');
+export async function getWishlistItems(req: Request, res: Response): Promise<void> {
+    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const offset = (page - 1) * limit;
 
-    res.json(result.rows);
+    const [itemsResult, countResult] = await Promise.all([
+        pool.query('SELECT * FROM wishlist_items ORDER BY id LIMIT $1 OFFSET $2', [limit, offset]),
+        pool.query('SELECT COUNT(*)::int AS total FROM wishlist_items'),
+    ]);
+
+    res.json({
+        items: itemsResult.rows,
+        total: countResult.rows[0].total,
+        page,
+        limit,
+    });
 }
 
 export async function createWishlistItem(req: Request, res: Response): Promise<void> {
