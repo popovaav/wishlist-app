@@ -12,7 +12,7 @@ export function WishlistPage() {
 
   return (
     <main>
-      <h1>My Wishlist</h1>
+      <h1 className="text-3xl font-bold">My Wishlist</h1>
       <ul>
         {data?.map((item) => (
           <li key={item.id}>
