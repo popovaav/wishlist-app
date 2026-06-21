@@ -17,3 +17,16 @@ export async function fetchWishlist(): Promise<WishlistItem[]> {
   const { data } = await api.get<WishlistItem[]>('/wishlist');
   return data;
 }
+
+export async function createWishlistItem(
+  payload: {
+    title: string;
+    price: string;
+    priority: WishlistItem['priority'];
+    status: WishlistItem['status'];
+    user_id: number;
+  }
+) {
+  const { data } = await api.post('/wishlist', payload);
+  return data;
+}
