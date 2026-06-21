@@ -13,8 +13,18 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-export async function fetchWishlist(): Promise<WishlistItem[]> {
-  const { data } = await api.get<WishlistItem[]>('/wishlist');
+export interface PaginatedWishlist {
+  items: WishlistItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function fetchWishlist({
+  page = 1,
+  limit = 10,
+}: { page?: number; limit?: number } = {}): Promise<PaginatedWishlist> {
+  const { data } = await api.get<PaginatedWishlist>('/wishlist', { params: { page, limit } });
   return data;
 }
 
