@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import {
@@ -8,7 +10,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from './ui/dialog';
-import { WishlistItemFormFields, emptyWishlistForm, type WishlistFormState } from './WishlistItemFormFields';
+import { WishlistItemFormFields } from './WishlistItemFormFields';
+import { wishlistItemSchema, type WishlistFormValues } from '@/lib/wishlistSchema';
 import { updateWishlistItem, type WishlistItem } from '@/api/wishlist';
 
 interface EditWishlistDialogProps {
@@ -17,23 +20,27 @@ interface EditWishlistDialogProps {
 }
 
 export function EditWishlistDialog({ item, onOpenChange }: EditWishlistDialogProps) {
-  const [form, setForm] = useState<WishlistFormState>(emptyWishlistForm);
   const queryClient = useQueryClient();
+
+  const form = useForm<WishlistFormValues>({
+    resolver: zodResolver(wishlistItemSchema),
+    defaultValues: { title: '', price: '' },
+  });
 
   useEffect(() => {
     if (item) {
-      setForm({ title: item.title, price: item.price, priority: item.priority, status: item.status });
+      form.reset({
+        title: item.title,
+        price: item.price,
+        priority: item.priority,
+        status: item.status,
+      });
     }
-  }, [item]);
+  }, [item, form]);
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      updateWishlistItem(item!.id, {
-        title: form.title,
-        price: form.price,
-        priority: form.priority as WishlistItem['priority'],
-        status: form.status as WishlistItem['status'],
-      }),
+    mutationFn: (values: WishlistFormValues) =>
+      updateWishlistItem(item!.id, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
       onOpenChange(false);
@@ -51,13 +58,15 @@ export function EditWishlistDialog({ item, onOpenChange }: EditWishlistDialogPro
           <DialogTitle>Edit Item</DialogTitle>
         </DialogHeader>
 
-        <WishlistItemFormFields form={form} onChange={setForm} />
+        <FormProvider {...form}>
+          <WishlistItemFormFields />
+        </FormProvider>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={() => mutate()} disabled={isPending}>
+          <Button onClick={form.handleSubmit((v) => mutate(v))} disabled={isPending}>
             {isPending ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>

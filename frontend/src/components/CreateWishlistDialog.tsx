@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import {
@@ -8,8 +9,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from './ui/dialog';
-import { WishlistItemFormFields, emptyWishlistForm, type WishlistFormState } from './WishlistItemFormFields';
-import { createWishlistItem, type WishlistItem } from '@/api/wishlist';
+import { WishlistItemFormFields } from './WishlistItemFormFields';
+import { wishlistItemSchema, type WishlistFormValues } from '@/lib/wishlistSchema';
+import { createWishlistItem } from '@/api/wishlist';
 
 interface CreateWishlistDialogProps {
   open: boolean;
@@ -17,27 +19,25 @@ interface CreateWishlistDialogProps {
 }
 
 export function CreateWishlistDialog({ open, onOpenChange }: CreateWishlistDialogProps) {
-  const [form, setForm] = useState<WishlistFormState>(emptyWishlistForm);
   const queryClient = useQueryClient();
 
+  const form = useForm<WishlistFormValues>({
+    resolver: zodResolver(wishlistItemSchema),
+    defaultValues: { title: '', price: '' },
+  });
+
   const { mutate, isPending } = useMutation({
-    mutationFn: () =>
-      createWishlistItem({
-        title: form.title,
-        price: form.price,
-        priority: form.priority as WishlistItem['priority'],
-        status: form.status as WishlistItem['status'],
-        user_id: 1,
-      }),
+    mutationFn: (values: WishlistFormValues) =>
+      createWishlistItem({ ...values, user_id: 1 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
-      setForm(emptyWishlistForm);
+      form.reset();
       onOpenChange(false);
     },
   });
 
   function handleCancel() {
-    setForm(emptyWishlistForm);
+    form.reset();
     onOpenChange(false);
   }
 
@@ -48,13 +48,15 @@ export function CreateWishlistDialog({ open, onOpenChange }: CreateWishlistDialo
           <DialogTitle>Add Item</DialogTitle>
         </DialogHeader>
 
-        <WishlistItemFormFields form={form} onChange={setForm} />
+        <FormProvider {...form}>
+          <WishlistItemFormFields />
+        </FormProvider>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={() => mutate()} disabled={isPending}>
+          <Button onClick={form.handleSubmit((v) => mutate(v))} disabled={isPending}>
             {isPending ? 'Creating...' : 'Create'}
           </Button>
         </DialogFooter>
