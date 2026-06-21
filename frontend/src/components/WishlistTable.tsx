@@ -2,8 +2,11 @@ import { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
+  getSortedRowModel,
   flexRender,
+  type Column,
   type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -22,7 +25,7 @@ import {
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { MoreHorizontal } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal } from 'lucide-react';
 import { deleteWishlistItem, type WishlistItem } from '@/api/wishlist';
 import { EditWishlistDialog } from './EditWishlistDialog';
 
@@ -43,9 +46,26 @@ interface WishlistTableProps {
   data: WishlistItem[];
 }
 
+function SortableHeader({ column, label }: { column: Column<WishlistItem>; label: string }) {
+  const sorted = column.getIsSorted();
+  const Icon = sorted === 'asc' ? ArrowUp : sorted === 'desc' ? ArrowDown : ArrowUpDown;
+  return (
+    <button
+      className="flex cursor-pointer items-center gap-1.5 font-medium hover:text-foreground"
+      onClick={(e) => column.getToggleSortingHandler()?.(e)}
+    >
+      {label}
+      <Icon className={`size-3.5 ${sorted ? 'text-foreground' : 'text-muted-foreground'}`} />
+    </button>
+  );
+}
+
+const priorityOrder: Record<WishlistItem['priority'], number> = { High: 3, Medium: 2, Low: 1 };
+
 export function WishlistTable({ data }: WishlistTableProps) {
   const queryClient = useQueryClient();
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const { mutate: deleteItem, isPending: isDeleting, variables: deletingId } = useMutation({
     mutationFn: deleteWishlistItem,
@@ -58,16 +78,18 @@ export function WishlistTable({ data }: WishlistTableProps) {
     () => [
       {
         accessorKey: 'title',
-        header: 'Title',
+        header: ({ column }) => <SortableHeader column={column} label="Title" />,
       },
       {
         accessorKey: 'price',
-        header: 'Price',
+        sortingFn: (a, b) => Number(a.original.price) - Number(b.original.price),
+        header: ({ column }) => <SortableHeader column={column} label="Price" />,
         cell: ({ getValue }) => usd.format(Number(getValue<string>())),
       },
       {
         accessorKey: 'priority',
-        header: 'Priority',
+        sortingFn: (a, b) => priorityOrder[a.original.priority] - priorityOrder[b.original.priority],
+        header: ({ column }) => <SortableHeader column={column} label="Priority" />,
         cell: ({ getValue }) => {
           const value = getValue<WishlistItem['priority']>();
           return <Badge className={priorityStyles[value]}>{value}</Badge>;
@@ -75,7 +97,7 @@ export function WishlistTable({ data }: WishlistTableProps) {
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: ({ column }) => <SortableHeader column={column} label="Status" />,
         cell: ({ getValue }) => {
           const value = getValue<WishlistItem['status']>();
           return <Badge className={statusStyles[value]}>{value}</Badge>;
@@ -83,6 +105,7 @@ export function WishlistTable({ data }: WishlistTableProps) {
       },
       {
         id: 'actions',
+        enableSorting: false,
         header: '',
         cell: ({ row }) => (
           <DropdownMenu>
@@ -113,7 +136,10 @@ export function WishlistTable({ data }: WishlistTableProps) {
   const table = useReactTable({
     data,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   return (
