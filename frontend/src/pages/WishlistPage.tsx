@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchWishlist, type PaginatedWishlist } from '../api/wishlist';
 import { WishlistTable } from '@/components/WishlistTable';
+import { WishlistTableSkeleton } from '@/components/WishlistTableSkeleton';
 import { CreateWishlistDialog } from '@/components/CreateWishlistDialog';
 import { Button } from '@/components/ui/button';
 
@@ -16,7 +17,6 @@ export function WishlistPage() {
     queryFn: () => fetchWishlist({ page, limit: LIMIT }),
   });
 
-  if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Failed to load wishlist.</p>;
 
   const totalPages = data ? Math.ceil(data.total / data.limit) : 1;
@@ -28,31 +28,37 @@ export function WishlistPage() {
         <Button onClick={() => setDialogOpen(true)}>Add Item</Button>
       </div>
 
-      <WishlistTable data={data?.items ?? []} />
+      {isLoading ? (
+        <WishlistTableSkeleton />
+      ) : (
+        <>
+          <WishlistTable data={data?.items ?? []} />
 
-      <div className="mt-4 flex items-center justify-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Previous
-        </Button>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Previous
+            </Button>
 
-        <span className="text-sm text-muted-foreground">
-          Page {page} of {totalPages}
-        </span>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
 
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Next
-        </Button>
-      </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </>
+      )}
 
       <CreateWishlistDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </main>
