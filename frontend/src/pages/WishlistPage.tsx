@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchWishlist, type WishlistItem } from '../api/wishlist';
+import { WishlistTable } from '@/components/WishlistTable';
 
 export function WishlistPage() {
   const { data, isLoading, isError } = useQuery<WishlistItem[]>({
@@ -11,17 +12,9 @@ export function WishlistPage() {
   if (isError) return <p>Failed to load wishlist.</p>;
 
   return (
-    <main>
-      <h1 className="text-3xl font-bold">My Wishlist</h1>
-      <ul>
-        {data?.map((item) => (
-          <li key={item.id}>
-            <strong>{item.title}</strong> — ${item.price} &nbsp;
-            <span>[{item.priority}]</span> &nbsp;
-            <span>{item.status}</span>
-          </li>
-        ))}
-      </ul>
+    <main className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="mb-6 text-3xl font-bold">My Wishlist</h1>
+      <WishlistTable data={data ?? []} />
     </main>
   );
 }
