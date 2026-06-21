@@ -3,9 +3,11 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getFilteredRowModel,
   flexRender,
   type Column,
   type ColumnDef,
+  type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,7 +27,16 @@ import {
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal } from 'lucide-react';
+import { Input } from './ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, RotateCcw } from 'lucide-react';
 import { deleteWishlistItem, type WishlistItem } from '@/api/wishlist';
 import { EditWishlistDialog } from './EditWishlistDialog';
 
@@ -66,6 +77,7 @@ export function WishlistTable({ data }: WishlistTableProps) {
   const queryClient = useQueryClient();
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const { mutate: deleteItem, isPending: isDeleting, variables: deletingId } = useMutation({
     mutationFn: deleteWishlistItem,
@@ -82,12 +94,14 @@ export function WishlistTable({ data }: WishlistTableProps) {
       },
       {
         accessorKey: 'price',
+        enableColumnFilter: false,
         sortingFn: (a, b) => Number(a.original.price) - Number(b.original.price),
         header: ({ column }) => <SortableHeader column={column} label="Price" />,
         cell: ({ getValue }) => usd.format(Number(getValue<string>())),
       },
       {
         accessorKey: 'priority',
+        filterFn: 'equals',
         sortingFn: (a, b) => priorityOrder[a.original.priority] - priorityOrder[b.original.priority],
         header: ({ column }) => <SortableHeader column={column} label="Priority" />,
         cell: ({ getValue }) => {
@@ -97,6 +111,7 @@ export function WishlistTable({ data }: WishlistTableProps) {
       },
       {
         accessorKey: 'status',
+        filterFn: 'equals',
         header: ({ column }) => <SortableHeader column={column} label="Status" />,
         cell: ({ getValue }) => {
           const value = getValue<WishlistItem['status']>();
@@ -106,6 +121,7 @@ export function WishlistTable({ data }: WishlistTableProps) {
       {
         id: 'actions',
         enableSorting: false,
+        enableColumnFilter: false,
         header: '',
         cell: ({ row }) => (
           <DropdownMenu>
@@ -136,14 +152,74 @@ export function WishlistTable({ data }: WishlistTableProps) {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, columnFilters },
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
+
+  const titleFilter  = (table.getColumn('title')?.getFilterValue()    as string) ?? '';
+  const statusFilter = (table.getColumn('status')?.getFilterValue()   as string) ?? '';
+  const priorityFilter = (table.getColumn('priority')?.getFilterValue() as string) ?? '';
+  const isFiltered = titleFilter || statusFilter || priorityFilter;
 
   return (
     <>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Search by title..."
+          value={titleFilter}
+          onChange={(e) => table.getColumn('title')?.setFilterValue(e.target.value || undefined)}
+          className="max-w-xs"
+        />
+
+        <Select
+          value={statusFilter || 'all'}
+          onValueChange={(v) => table.getColumn('status')?.setFilterValue(v === 'all' ? undefined : v)}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="Want">Want</SelectItem>
+            <SelectItem value="Purchased">Purchased</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={priorityFilter || 'all'}
+          onValueChange={(v) => table.getColumn('priority')?.setFilterValue(v === 'all' ? undefined : v)}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All Priorities" />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="High">High</SelectItem>
+            <SelectItem value="Medium">Medium</SelectItem>
+            <SelectItem value="Low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              disabled={!isFiltered}
+              onClick={() => table.resetColumnFilters()}
+              aria-label="Reset filters"
+            >
+              <RotateCcw />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Reset filters</TooltipContent>
+        </Tooltip>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -171,7 +247,7 @@ export function WishlistTable({ data }: WishlistTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  No items in your wishlist yet.
+                  {isFiltered ? 'No items match your filters.' : 'No items in your wishlist yet.'}
                 </TableCell>
               </TableRow>
             )}
