@@ -1,12 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
   flexRender,
-  type Column,
-  type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
@@ -19,59 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, RotateCcw } from 'lucide-react';
+import { WishlistTableToolbar } from './WishlistTableToolbar';
 import { deleteWishlistItem, type WishlistItem } from '@/api/wishlist';
+import { useWishlistColumns } from '@/hooks/useWishlistColumns';
 import { EditWishlistDialog } from './EditWishlistDialog';
-
-const priorityStyles: Record<WishlistItem['priority'], string> = {
-  High:   'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-  Medium: 'border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-  Low:    'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-};
-
-const statusStyles: Record<WishlistItem['status'], string> = {
-  Want:      'border-transparent bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
-  Purchased: 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-};
-
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
 interface WishlistTableProps {
   data: WishlistItem[];
 }
-
-function SortableHeader({ column, label }: { column: Column<WishlistItem>; label: string }) {
-  const sorted = column.getIsSorted();
-  const Icon = sorted === 'asc' ? ArrowUp : sorted === 'desc' ? ArrowDown : ArrowUpDown;
-  return (
-    <button
-      className="flex cursor-pointer items-center gap-1.5 font-medium hover:text-foreground"
-      onClick={(e) => column.getToggleSortingHandler()?.(e)}
-    >
-      {label}
-      <Icon className={`size-3.5 ${sorted ? 'text-foreground' : 'text-muted-foreground'}`} />
-    </button>
-  );
-}
-
-const priorityOrder: Record<WishlistItem['priority'], number> = { High: 3, Medium: 2, Low: 1 };
 
 export function WishlistTable({ data }: WishlistTableProps) {
   const queryClient = useQueryClient();
@@ -86,68 +39,12 @@ export function WishlistTable({ data }: WishlistTableProps) {
     },
   });
 
-  const columns = useMemo<ColumnDef<WishlistItem>[]>(
-    () => [
-      {
-        accessorKey: 'title',
-        header: ({ column }) => <SortableHeader column={column} label="Title" />,
-      },
-      {
-        accessorKey: 'price',
-        enableColumnFilter: false,
-        sortingFn: (a, b) => Number(a.original.price) - Number(b.original.price),
-        header: ({ column }) => <SortableHeader column={column} label="Price" />,
-        cell: ({ getValue }) => usd.format(Number(getValue<string>())),
-      },
-      {
-        accessorKey: 'priority',
-        filterFn: 'equals',
-        sortingFn: (a, b) => priorityOrder[a.original.priority] - priorityOrder[b.original.priority],
-        header: ({ column }) => <SortableHeader column={column} label="Priority" />,
-        cell: ({ getValue }) => {
-          const value = getValue<WishlistItem['priority']>();
-          return <Badge className={priorityStyles[value]}>{value}</Badge>;
-        },
-      },
-      {
-        accessorKey: 'status',
-        filterFn: 'equals',
-        header: ({ column }) => <SortableHeader column={column} label="Status" />,
-        cell: ({ getValue }) => {
-          const value = getValue<WishlistItem['status']>();
-          return <Badge className={statusStyles[value]}>{value}</Badge>;
-        },
-      },
-      {
-        id: 'actions',
-        enableSorting: false,
-        enableColumnFilter: false,
-        header: '',
-        cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Row actions">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditingItem(row.original)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={isDeleting && deletingId === row.original.id}
-                onClick={() => deleteItem(row.original.id)}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
-      },
-    ],
-    [deleteItem, isDeleting, deletingId],
-  );
+  const columns = useWishlistColumns({
+    onEdit: setEditingItem,
+    onDelete: deleteItem,
+    isDeleting,
+    deletingId,
+  });
 
   const table = useReactTable({
     data,
@@ -160,65 +57,26 @@ export function WishlistTable({ data }: WishlistTableProps) {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  const titleFilter  = (table.getColumn('title')?.getFilterValue()    as string) ?? '';
-  const statusFilter = (table.getColumn('status')?.getFilterValue()   as string) ?? '';
-  const priorityFilter = (table.getColumn('priority')?.getFilterValue() as string) ?? '';
+  const getFilterValue = (columnId: string) =>
+    (table.getColumn(columnId)?.getFilterValue() as string) ?? '';
+
+  const titleFilter = getFilterValue('title');
+  const statusFilter = getFilterValue('status');
+  const priorityFilter = getFilterValue('priority');
   const isFiltered = titleFilter || statusFilter || priorityFilter;
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Input
-          placeholder="Search by title..."
-          value={titleFilter}
-          onChange={(e) => table.getColumn('title')?.setFilterValue(e.target.value || undefined)}
-          className="max-w-xs"
-        />
-
-        <Select
-          value={statusFilter || 'all'}
-          onValueChange={(v) => table.getColumn('status')?.setFilterValue(v === 'all' ? undefined : v)}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="Want">Want</SelectItem>
-            <SelectItem value="Purchased">Purchased</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={priorityFilter || 'all'}
-          onValueChange={(v) => table.getColumn('priority')?.setFilterValue(v === 'all' ? undefined : v)}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Priorities" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="High">High</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
-            <SelectItem value="Low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              disabled={!isFiltered}
-              onClick={() => table.resetColumnFilters()}
-              aria-label="Reset filters"
-            >
-              <RotateCcw />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Reset filters</TooltipContent>
-        </Tooltip>
-      </div>
+      <WishlistTableToolbar
+        titleFilter={titleFilter}
+        statusFilter={statusFilter}
+        priorityFilter={priorityFilter}
+        isFiltered={!!isFiltered}
+        onTitleChange={(v) => table.getColumn('title')?.setFilterValue(v)}
+        onStatusChange={(v) => table.getColumn('status')?.setFilterValue(v)}
+        onPriorityChange={(v) => table.getColumn('priority')?.setFilterValue(v)}
+        onReset={() => table.resetColumnFilters()}
+      />
 
       <div className="rounded-md border">
         <Table>
