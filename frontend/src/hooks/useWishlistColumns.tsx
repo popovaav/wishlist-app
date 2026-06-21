@@ -29,16 +29,12 @@ function SortableHeader({ column, label }: { column: Column<WishlistItem>; label
 
 interface UseWishlistColumnsProps {
   onEdit: (item: WishlistItem) => void;
-  onDelete: (id: number) => void;
-  isDeleting: boolean;
-  deletingId: number | undefined;
+  onDeleteRequest: (item: WishlistItem) => void;
 }
 
 export function useWishlistColumns({
   onEdit,
-  onDelete,
-  isDeleting,
-  deletingId,
+  onDeleteRequest,
 }: UseWishlistColumnsProps): ColumnDef<WishlistItem>[] {
   return useMemo<ColumnDef<WishlistItem>[]>(
     () => [
@@ -90,8 +86,7 @@ export function useWishlistColumns({
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
-                disabled={isDeleting && deletingId === row.original.id}
-                onClick={() => onDelete(row.original.id)}
+                onClick={() => onDeleteRequest(row.original)}
               >
                 Delete
               </DropdownMenuItem>
@@ -100,6 +95,6 @@ export function useWishlistColumns({
         ),
       },
     ],
-    [onEdit, onDelete, isDeleting, deletingId],
+    [onEdit, onDeleteRequest],
   );
 }
