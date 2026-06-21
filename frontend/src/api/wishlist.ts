@@ -30,3 +30,7 @@ export async function createWishlistItem(
   const { data } = await api.post('/wishlist', payload);
   return data;
 }
+
+export async function deleteWishlistItem(id: number) {
+  await api.delete(`/wishlist/${id}`);
+}
