@@ -31,6 +31,19 @@ export async function createWishlistItem(
   return data;
 }
 
+export async function updateWishlistItem(
+  id: number,
+  payload: {
+    title: string;
+    price: string;
+    priority: WishlistItem['priority'];
+    status: WishlistItem['status'];
+  },
+) {
+  const { data } = await api.put<WishlistItem>(`/wishlist/${id}`, payload);
+  return data;
+}
+
 export async function deleteWishlistItem(id: number) {
   await api.delete(`/wishlist/${id}`);
 }
