@@ -1,7 +1,16 @@
 import express, { type Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import wishlistRoutes from './routes/wishlist.routes.js';
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: {
+    message: 'Too many requests, please try again later.',
+  },
+});
 
 const PORT = Number(process.env.PORT) || 8000;
 
@@ -11,7 +20,7 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-app.use('/wishlist', wishlistRoutes);
+app.use('/wishlist', limiter, wishlistRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
