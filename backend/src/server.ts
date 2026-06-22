@@ -17,7 +17,7 @@ const PORT = Number(process.env.PORT) || 8000;
 
 const app: Application = express()
 
-app.use(cors());
+app.use(cors({ origin: process.env.FRONTEND_URL ?? 'http://localhost:5173' }));
 app.use(helmet());
 app.use(express.json());
 
