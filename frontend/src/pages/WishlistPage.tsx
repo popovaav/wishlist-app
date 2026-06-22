@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { type SortingState } from '@tanstack/react-table';
 import { fetchWishlist, type PaginatedWishlist } from '../api/wishlist';
 import { WishlistTable } from '@/components/WishlistTable';
 import { WishlistTableSkeleton } from '@/components/WishlistTableSkeleton';
@@ -11,15 +12,55 @@ const LIMIT = 10;
 export function WishlistPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [priority, setPriority] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const sortBy    = sorting[0]?.id;
+  const sortOrder = sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') as 'asc' | 'desc' : undefined;
+  const isFiltered = !!search || !!status || !!priority;
 
   const { data, isLoading, isError } = useQuery<PaginatedWishlist>({
-    queryKey: ['wishlist', page],
-    queryFn: () => fetchWishlist({ page, limit: LIMIT }),
+    queryKey: ['wishlist', { page, search, status, priority, sortBy, sortOrder }],
+    queryFn: () => fetchWishlist({
+      page,
+      limit: LIMIT,
+      search:   search   || undefined,
+      status:   status   || undefined,
+      priority: priority || undefined,
+      sortBy,
+      sortOrder,
+    }),
+    placeholderData: keepPreviousData,
   });
 
   if (isError) return <p>Failed to load wishlist.</p>;
 
-  const totalPages = data ? Math.ceil(data.total / data.limit) : 1;
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
+
+  function handleSearchChange(v: string | undefined) {
+    setSearch(v ?? '');
+    setPage(1);
+  }
+  function handleStatusChange(v: string | undefined) {
+    setStatus(v ?? '');
+    setPage(1);
+  }
+  function handlePriorityChange(v: string | undefined) {
+    setPriority(v ?? '');
+    setPage(1);
+  }
+  function handleSortingChange(next: SortingState) {
+    setSorting(next);
+    setPage(1);
+  }
+  function handleResetFilters() {
+    setSearch('');
+    setStatus('');
+    setPriority('');
+    setPage(1);
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -32,7 +73,19 @@ export function WishlistPage() {
         <WishlistTableSkeleton />
       ) : (
         <>
-          <WishlistTable data={data?.items ?? []} />
+          <WishlistTable
+            data={data?.items ?? []}
+            search={search}
+            status={status}
+            priority={priority}
+            isFiltered={isFiltered}
+            sorting={sorting}
+            onSearchChange={handleSearchChange}
+            onStatusChange={handleStatusChange}
+            onPriorityChange={handlePriorityChange}
+            onSortingChange={handleSortingChange}
+            onResetFilters={handleResetFilters}
+          />
 
           <div className="mt-4 flex items-center justify-center gap-3">
             <Button

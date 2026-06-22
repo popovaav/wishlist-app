@@ -1,19 +1,55 @@
 import type { Request, Response } from 'express';
 import pool from '../db/db.js';
 
+const ALLOWED_SORT_COLUMNS = new Set(['title', 'price', 'priority', 'status']);
+
 export async function getWishlistItems(req: Request, res: Response): Promise<void> {
-    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const page  = Math.max(1, parseInt(req.query['page']  as string) || 1);
+    const limit = Math.max(1, parseInt(req.query['limit'] as string) || 10);
     const offset = (page - 1) * limit;
 
+    const search   = (req.query['search']   as string | undefined) ?? '';
+    const status   = (req.query['status']   as string | undefined) ?? '';
+    const priority = (req.query['priority'] as string | undefined) ?? '';
+    const rawSortBy    = (req.query['sortBy']    as string | undefined) ?? '';
+    const rawSortOrder = (req.query['sortOrder'] as string | undefined) ?? '';
+
+    const sortBy    = ALLOWED_SORT_COLUMNS.has(rawSortBy) ? rawSortBy : 'id';
+    const sortOrder = rawSortOrder === 'desc' ? 'DESC' : 'ASC';
+
+    const filterParams: (string | number)[] = [];
+    const conditions: string[] = [];
+
+    if (search) {
+        filterParams.push(`%${search}%`);
+        conditions.push(`title ILIKE $${filterParams.length}`);
+    }
+    if (status) {
+        filterParams.push(status);
+        conditions.push(`status = $${filterParams.length}`);
+    }
+    if (priority) {
+        filterParams.push(priority);
+        conditions.push(`priority = $${filterParams.length}`);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const n = filterParams.length;
+
     const [itemsResult, countResult] = await Promise.all([
-        pool.query('SELECT * FROM wishlist_items ORDER BY id LIMIT $1 OFFSET $2', [limit, offset]),
-        pool.query('SELECT COUNT(*)::int AS total FROM wishlist_items'),
+        pool.query(
+            `SELECT * FROM wishlist_items ${where} ORDER BY ${sortBy} ${sortOrder} LIMIT $${n + 1} OFFSET $${n + 2}`,
+            [...filterParams, limit, offset],
+        ),
+        pool.query(
+            `SELECT COUNT(*)::int AS total FROM wishlist_items ${where}`,
+            filterParams,
+        ),
     ]);
 
     res.json({
         items: itemsResult.rows,
-        total: countResult.rows[0].total,
+        total: countResult.rows[0]?.total ?? 0,
         page,
         limit,
     });

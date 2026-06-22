@@ -2,10 +2,7 @@ import { useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
   flexRender,
-  type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,14 +22,34 @@ import { DeleteWishlistDialog } from './DeleteWishlistDialog';
 
 interface WishlistTableProps {
   data: WishlistItem[];
+  search: string;
+  status: string;
+  priority: string;
+  isFiltered: boolean;
+  sorting: SortingState;
+  onSearchChange: (v: string | undefined) => void;
+  onStatusChange: (v: string | undefined) => void;
+  onPriorityChange: (v: string | undefined) => void;
+  onSortingChange: (sorting: SortingState) => void;
+  onResetFilters: () => void;
 }
 
-export function WishlistTable({ data }: WishlistTableProps) {
+export function WishlistTable({
+  data,
+  search,
+  status,
+  priority,
+  isFiltered,
+  sorting,
+  onSearchChange,
+  onStatusChange,
+  onPriorityChange,
+  onSortingChange,
+  onResetFilters,
+}: WishlistTableProps) {
   const queryClient = useQueryClient();
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<WishlistItem | null>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const { mutate: deleteItem, isPending: isDeleting } = useMutation({
     mutationFn: deleteWishlistItem,
@@ -50,33 +67,27 @@ export function WishlistTable({ data }: WishlistTableProps) {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    state: { sorting },
+    onSortingChange: (updater) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+      onSortingChange(next);
+    },
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+    manualSorting: true,
+    manualFiltering: true,
   });
-
-  const getFilterValue = (columnId: string) =>
-    (table.getColumn(columnId)?.getFilterValue() as string) ?? '';
-
-  const titleFilter = getFilterValue('title');
-  const statusFilter = getFilterValue('status');
-  const priorityFilter = getFilterValue('priority');
-  const isFiltered = titleFilter || statusFilter || priorityFilter;
 
   return (
     <>
       <WishlistTableToolbar
-        titleFilter={titleFilter}
-        statusFilter={statusFilter}
-        priorityFilter={priorityFilter}
-        isFiltered={!!isFiltered}
-        onTitleChange={(v) => table.getColumn('title')?.setFilterValue(v)}
-        onStatusChange={(v) => table.getColumn('status')?.setFilterValue(v)}
-        onPriorityChange={(v) => table.getColumn('priority')?.setFilterValue(v)}
-        onReset={() => table.resetColumnFilters()}
+        titleFilter={search}
+        statusFilter={status}
+        priorityFilter={priority}
+        isFiltered={isFiltered}
+        onTitleChange={onSearchChange}
+        onStatusChange={onStatusChange}
+        onPriorityChange={onPriorityChange}
+        onReset={onResetFilters}
       />
 
       <div className="rounded-md border">

@@ -20,11 +20,18 @@ export interface PaginatedWishlist {
   limit: number;
 }
 
-export async function fetchWishlist({
-  page = 1,
-  limit = 10,
-}: { page?: number; limit?: number } = {}): Promise<PaginatedWishlist> {
-  const { data } = await api.get<PaginatedWishlist>('/wishlist', { params: { page, limit } });
+export interface WishlistQuery {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+  priority?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export async function fetchWishlist(params: WishlistQuery): Promise<PaginatedWishlist> {
+  const { data } = await api.get<PaginatedWishlist>('/wishlist', { params });
   return data;
 }
 
