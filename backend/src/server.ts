@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import wishlistRoutes from './routes/wishlist.routes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -21,6 +22,7 @@ app.use(helmet());
 app.use(express.json());
 
 app.use('/wishlist', limiter, wishlistRoutes);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
