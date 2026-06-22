@@ -5,7 +5,7 @@ const ALLOWED_SORT_COLUMNS = new Set(['title', 'price', 'priority', 'status']);
 
 export async function getWishlistItems(req: Request, res: Response): Promise<void> {
     const page  = Math.max(1, parseInt(req.query['page']  as string) || 1);
-    const limit = Math.max(1, parseInt(req.query['limit'] as string) || 10);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query['limit'] as string) || 10));
     const offset = (page - 1) * limit;
 
     const search   = (req.query['search']   as string | undefined) ?? '';
