@@ -9,7 +9,6 @@ const wishlistItemFields = {
 
 export const createWishlistItemSchema = z.object({
   ...wishlistItemFields,
-  user_id: z.number().int().positive(),
 });
 
 export const updateWishlistItemSchema = z.object({

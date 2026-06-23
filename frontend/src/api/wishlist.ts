@@ -6,7 +6,6 @@ export interface WishlistItem {
   price: string;
   priority: 'High' | 'Medium' | 'Low';
   status: 'Want' | 'Purchased';
-  user_id: number;
 }
 
 export interface PaginatedWishlist {
@@ -31,15 +30,12 @@ export async function fetchWishlist(params: WishlistQuery): Promise<PaginatedWis
   return data;
 }
 
-export async function createWishlistItem(
-  payload: {
-    title: string;
-    price: string;
-    priority: WishlistItem['priority'];
-    status: WishlistItem['status'];
-    user_id: number;
-  }
-) {
+export async function createWishlistItem(payload: {
+  title: string;
+  price: string;
+  priority: WishlistItem['priority'];
+  status: WishlistItem['status'];
+}) {
   const { data } = await client.post('/wishlist', payload);
   return data;
 }
