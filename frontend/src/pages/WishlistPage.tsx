@@ -17,7 +17,7 @@ export function WishlistPage() {
   const [priority, setPriority] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const sortBy    = sorting[0]?.id;
+  const sortBy = sorting[0]?.id;
   const sortOrder = sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') as 'asc' | 'desc' : undefined;
   const isFiltered = !!search || !!status || !!priority;
 

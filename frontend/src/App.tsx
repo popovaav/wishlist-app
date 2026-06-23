@@ -1,7 +1,7 @@
-import { WishlistPage } from './pages/WishlistPage'
+import { AppRouter } from '@/router/AppRouter';
 
 function App() {
-  return <WishlistPage />;
+  return <AppRouter />;
 }
 
-export default App
+export default App;
