@@ -1,20 +1,12 @@
-import axios from 'axios';
-import type { LoginRequest, RegisterRequest, RegisterResponse, AuthResponse } from '@/types/auth';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
+import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '@/types/auth';
+import client from './client';
 
 export async function register(payload: RegisterRequest): Promise<RegisterResponse> {
-  const { data } = await api.post<RegisterResponse>('/auth/register', payload);
+  const { data } = await client.post<RegisterResponse>('/auth/register', payload);
   return data;
 }
 
-// TODO: POST /auth/login — exchange credentials for a JWT
-export async function login(credentials: LoginRequest): Promise<AuthResponse> {
-  // TODO: implement when backend auth is ready
-  // const { data } = await api.post<AuthResponse>('/auth/login', credentials);
-  // return data;
-  void credentials;
-  throw new Error('login not yet implemented');
+export async function login(credentials: LoginRequest): Promise<LoginResponse> {
+  const { data } = await client.post<LoginResponse>('/auth/login', credentials);
+  return data;
 }

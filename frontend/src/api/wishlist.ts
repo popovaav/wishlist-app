@@ -1,4 +1,4 @@
-import axios from 'axios';
+import client from './client';
 
 export interface WishlistItem {
   id: number;
@@ -8,10 +8,6 @@ export interface WishlistItem {
   status: 'Want' | 'Purchased';
   user_id: number;
 }
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-});
 
 export interface PaginatedWishlist {
   items: WishlistItem[];
@@ -31,7 +27,7 @@ export interface WishlistQuery {
 }
 
 export async function fetchWishlist(params: WishlistQuery): Promise<PaginatedWishlist> {
-  const { data } = await api.get<PaginatedWishlist>('/wishlist', { params });
+  const { data } = await client.get<PaginatedWishlist>('/wishlist', { params });
   return data;
 }
 
@@ -44,7 +40,7 @@ export async function createWishlistItem(
     user_id: number;
   }
 ) {
-  const { data } = await api.post('/wishlist', payload);
+  const { data } = await client.post('/wishlist', payload);
   return data;
 }
 
@@ -57,10 +53,10 @@ export async function updateWishlistItem(
     status: WishlistItem['status'];
   },
 ) {
-  const { data } = await api.put<WishlistItem>(`/wishlist/${id}`, payload);
+  const { data } = await client.put<WishlistItem>(`/wishlist/${id}`, payload);
   return data;
 }
 
 export async function deleteWishlistItem(id: number) {
-  await api.delete(`/wishlist/${id}`);
+  await client.delete(`/wishlist/${id}`);
 }

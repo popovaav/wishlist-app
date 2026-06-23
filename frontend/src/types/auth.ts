@@ -22,3 +22,5 @@ export interface AuthResponse {
   token: string;
   user: User;
 }
+
+export type LoginResponse = AuthResponse;

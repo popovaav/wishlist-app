@@ -1,31 +1,36 @@
-import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { AuthFormField } from '@/components/auth/AuthFormField';
 import { loginSchema, type LoginFormValues } from '@/lib/authSchema';
 import { login } from '@/api/auth.api';
+import { setAuth } from '@/lib/auth';
 
 export function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const methods = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
 
-  async function onSubmit(data: LoginFormValues) {
-    setIsLoading(true);
-    try {
-      await login(data);
-      // TODO: store token and redirect to "/" on success
-    } catch {
-      // TODO: show inline error or toast notification
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: login,
+    onSuccess: ({ token, user }) => {
+      setAuth(token, user);
+      navigate('/');
+    },
+  });
+
+  const serverError =
+    axios.isAxiosError(error) && error.response?.data?.message
+      ? (error.response.data.message as string)
+      : error
+        ? 'Something went wrong. Please try again.'
+        : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -37,7 +42,10 @@ export function LoginPage() {
 
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <FormProvider {...methods}>
-            <form onSubmit={methods.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <form
+              onSubmit={methods.handleSubmit((data) => mutate(data))}
+              className="flex flex-col gap-4"
+            >
               <AuthFormField
                 name="email"
                 label="Email"
@@ -50,8 +58,11 @@ export function LoginPage() {
                 type="password"
                 placeholder="••••••••"
               />
-              <Button type="submit" disabled={isLoading} className="mt-2 w-full">
-                {isLoading ? 'Signing in…' : 'Sign in'}
+              {serverError && (
+                <p className="text-sm text-destructive">{serverError}</p>
+              )}
+              <Button type="submit" disabled={isPending} className="mt-2 w-full">
+                {isPending ? 'Signing in…' : 'Sign in'}
               </Button>
             </form>
           </FormProvider>
