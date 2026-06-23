@@ -1,30 +1,37 @@
-import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { AuthFormField } from '@/components/auth/AuthFormField';
 import { registerSchema, type RegisterFormValues } from '@/lib/authSchema';
 import { register as registerUser } from '@/api/auth.api';
 
 export function RegisterPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const methods = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { email: '', password: '', confirmPassword: '' },
   });
 
-  async function onSubmit(data: RegisterFormValues) {
-    setIsLoading(true);
-    try {
-      await registerUser(data);
-      // TODO: store token and redirect to "/" on success
-    } catch {
-      // TODO: show inline error or toast notification
-    } finally {
-      setIsLoading(false);
-    }
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: registerUser,
+    onSuccess: () => {
+      navigate('/login');
+    },
+  });
+
+  const serverError =
+    axios.isAxiosError(error) && error.response?.data?.message
+      ? (error.response.data.message as string)
+      : error
+        ? 'Something went wrong. Please try again.'
+        : null;
+
+  function onSubmit({ email, password }: RegisterFormValues) {
+    mutate({ email, password });
   }
 
   return (
@@ -56,8 +63,11 @@ export function RegisterPage() {
                 type="password"
                 placeholder="••••••••"
               />
-              <Button type="submit" disabled={isLoading} className="mt-2 w-full">
-                {isLoading ? 'Creating account…' : 'Create account'}
+              {serverError && (
+                <p className="text-sm text-destructive">{serverError}</p>
+              )}
+              <Button type="submit" disabled={isPending} className="mt-2 w-full">
+                {isPending ? 'Creating account…' : 'Create account'}
               </Button>
             </form>
           </FormProvider>

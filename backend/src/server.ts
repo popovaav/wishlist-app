@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import wishlistRoutes from './routes/wishlist.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const limiter = rateLimit({
@@ -22,6 +23,7 @@ app.use(helmet());
 app.use(express.json());
 
 app.use('/wishlist', limiter, wishlistRoutes);
+app.use('/auth', limiter, authRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {

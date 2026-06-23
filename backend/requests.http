@@ -31,3 +31,13 @@ Content-Type: application/json
 ###
 
 DELETE http://localhost:8000/wishlist/1
+
+###
+
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{
+  "email": "test123@test.com",
+  "password": "password123"
+}
