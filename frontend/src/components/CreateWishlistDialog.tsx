@@ -28,7 +28,7 @@ export function CreateWishlistDialog({ open, onOpenChange }: CreateWishlistDialo
 
   const { mutate, isPending } = useMutation({
     mutationFn: (values: WishlistFormValues) =>
-      createWishlistItem({ ...values, user_id: 1 }),
+      createWishlistItem(values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
       form.reset();
