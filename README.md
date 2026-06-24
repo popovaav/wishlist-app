@@ -1,6 +1,6 @@
 # 🛍️ Wishlist App
 
-A full-stack wishlist manager built with React and Express. Users can create, edit, delete, search, filter, sort, and paginate wishlist items through a modern UI backed by a REST API and PostgreSQL database.
+A full-stack wishlist manager with JWT authentication and user-specific data ownership. Users register, log in, and manage their own wishlist items through a secure REST API backed by PostgreSQL.
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)
@@ -19,14 +19,16 @@ A full-stack wishlist manager built with React and Express. Users can create, ed
 
 ## ✨ Features
 
+- User registration and login
+- JWT authentication with protected routes
+- User-specific wishlist items and ownership-based access control
 - Create, edit, and delete wishlist items
 - Search by title
 - Filter by status and priority
 - Server-side sorting
 - Server-side pagination
 - Form validation with React Hook Form and Zod
-- Responsive UI
-- Loading states and skeletons
+- Responsive UI with loading states and skeletons
 
 ---
 
@@ -36,8 +38,8 @@ A full-stack wishlist manager built with React and Express. Users can create, ed
 |---|---|---|
 | React, TypeScript, Vite | Node.js, Express, TypeScript | Neon PostgreSQL |
 | React Hook Form, Zod | PostgreSQL, pg, Zod | Render (API) |
-| TanStack Query, TanStack Table | Helmet, express-rate-limit, cors | Vercel (UI) |
-| Axios, Tailwind CSS, shadcn/ui, Lucide React | | GitHub |
+| TanStack Query, TanStack Table | bcrypt, jsonwebtoken (JWT) | Vercel (UI) |
+| Axios, Tailwind CSS, shadcn/ui, Lucide React | Helmet, express-rate-limit, cors | GitHub |
 
 ---
 
@@ -50,7 +52,7 @@ wishlist-app/
 └── README.md
 ```
 
-Frontend provides the user interface, while the backend exposes a REST API and handles all database operations. Data is stored in Neon PostgreSQL.
+The frontend is a React SPA that handles authentication state and communicates with the backend via authenticated requests. The backend exposes a REST API with JWT-based authorization middleware protecting all wishlist endpoints. User passwords are hashed with bcrypt; tokens are signed with a secret and validated on every protected request. Wishlist data is scoped to the authenticated user at the database layer.
 
 ---
 
@@ -58,10 +60,14 @@ Frontend provides the user interface, while the backend exposes a REST API and h
 
 | Method | Endpoint | Description |
 |---|---|---|
+| `POST` | `/auth/register` | Create a new account |
+| `POST` | `/auth/login` | Authenticate user and return JWT |
 | `GET` | `/wishlist` | List items (paginated, filtered, sorted) |
 | `POST` | `/wishlist` | Create an item |
 | `PUT` | `/wishlist/:id` | Update an item |
 | `DELETE` | `/wishlist/:id` | Delete an item |
+
+Wishlist endpoints require a valid JWT in the `Authorization` header. All data is scoped to the authenticated user.
 
 **Supported query params:** `page` · `limit` · `search` · `status` · `priority` · `sortBy` · `sortOrder`
 
@@ -80,11 +86,11 @@ Deployments trigger automatically on push to `main`.
 
 ## 🎓 Key Learnings
 
-- Building and deploying a full-stack application with React, Express, and PostgreSQL
+- Building a full-stack application with React, Express, PostgreSQL, and JWT authentication
+- Implementing secure authentication with bcrypt and JSON Web Tokens
 - Designing REST APIs with filtering, sorting, and pagination
-- Writing secure PostgreSQL queries using parameterized statements
-- Configuring production deployments with Vercel, Render, and Neon
-- Applying production-ready practices — environment configuration, CORS, rate limiting, and error handling
+- Managing server state and API communication with TanStack Query and Axios
+- Deploying production applications with Vercel, Render, and Neon
 
 ---
 
